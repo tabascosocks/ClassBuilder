@@ -154,10 +154,10 @@
                                 <goal>jpackage</goal>
                             </goals>
                             <configuration>
-                                <name>EducatorStudio</name>
+                                <name>ClassBuilder</name>
                                 <type>APP_IMAGE</type>
                                 <appVersion>${project.version}</appVersion>
-                                <vendor>org.edumentic</vendor>
+                                <vendor>edumentic.com</vendor>
                                 <runtimeImage>${java.home}</runtimeImage>
                                 <module>classbuilder/${main.class}</module>
                                 <modulePaths>
@@ -173,9 +173,9 @@
                                 <goal>jpackage</goal>
                             </goals>
                             <configuration>
-                                <name>EducatorStudio</name>
+                                <name>ClassBuilder</name>
                                 <appVersion>${project.version}</appVersion>
-                                <vendor>org.edumentic</vendor>
+                                <vendor>edumentic.com</vendor>
                                 <runtimeImage>${java.home}</runtimeImage>
                                 <module>classbuilder/${main.class}</module>
                                 <modulePaths>
