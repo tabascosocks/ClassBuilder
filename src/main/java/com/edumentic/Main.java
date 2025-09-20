@@ -2,8 +2,19 @@ package com.edumentic;
 
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
+
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class Main {
+
+    @Getter @Setter
+    private int myNum;
+
     public static void main(String[] args) {
+        log.debug("Helloaskd asdlasd ;aslkd l;k asdlask d;las");
         //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
         // to see how IntelliJ IDEA suggests fixing it.
         System.out.printf("Hello and welcome!");
