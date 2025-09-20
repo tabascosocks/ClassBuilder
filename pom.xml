@@ -12,6 +12,14 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <optaplanner.version>9.44.0.Final</optaplanner.version>
+        <commons.csv.version>1.11.0</commons.csv.version>
+        <lombok.version>1.18.42</lombok.version>
+        <slf4j.version>2.0.17</slf4j.version>
+        <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
+        <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
+        <main.class>com.edumentic.classbuilder.Main</main.class>
     </properties>
 
     <dependencyManagement>
@@ -20,36 +28,32 @@
                 <groupId>org.optaplanner</groupId>
                 <artifactId>optaplanner-bom</artifactId>
                 <type>pom</type>
-                <version>9.44.0.Final</version>
+                <version>${optaplanner.version}</version>
                 <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
     <dependencies>
-        <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-csv -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-csv</artifactId>
-            <version>1.11.0</version>
+            <version>${commons.csv.version}</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.42</version>
+            <version>${lombok.version}</version>
             <scope>provided</scope>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>2.0.17</version>
+            <version>${slf4j.version}</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.slf4j/jul-to-slf4j -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-jdk14</artifactId>
-            <version>2.0.17</version>
+            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.optaplanner</groupId>
@@ -61,5 +65,172 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven.compiler.plugin.version}</version>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>${maven.jar.plugin.version}</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <mainClass>${main.class}</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+    <profile>
+        <id>package-jpackage</id>
+        <build>
+            <plugins>
+                <!-- Copy dependencies, so we have target/lib/ ready -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>3.2.0</version>
+                    <executions>
+                        <execution>
+                            <id>copy-dependencies</id>
+                            <phase>generate-resources</phase>
+                            <goals>
+                                <goal>copy-dependencies</goal>
+                            </goals>
+                            <configuration>
+                                <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                                <overWriteReleases>false</overWriteReleases>
+                                <overWriteSnapshots>false</overWriteSnapshots>
+                                <overWriteIfNewer>true</overWriteIfNewer>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>copy-main-jar</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>copy</goal>
+                            </goals>
+                            <configuration>
+                                <artifactItems>
+                                    <artifactItem>
+                                        <groupId>${project.groupId}</groupId>
+                                        <artifactId>${project.artifactId}</artifactId>
+                                        <version>${project.version}</version>
+                                        <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                                        <destFileName>${project.build.finalName}.jar</destFileName>
+                                    </artifactItem>
+                                </artifactItems>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.panteleyev</groupId>
+                    <artifactId>jpackage-maven-plugin</artifactId>
+                    <version>1.6.4</version>
+                    <executions>
+                        <execution>
+                            <id>create-image</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>jpackage</goal>
+                            </goals>
+                            <configuration>
+                                <name>EducatorStudio</name>
+                                <type>APP_IMAGE</type>
+                                <appVersion>${project.version}</appVersion>
+                                <vendor>org.edumentic</vendor>
+                                <runtimeImage>${java.home}</runtimeImage>
+                                <module>classbuilder/${main.class}</module>
+                                <modulePaths>
+                                    <modulePath>${project.build.directory}/lib</modulePath>
+                                </modulePaths>
+                                <destination>${project.build.directory}/image</destination>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>create-installer</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>jpackage</goal>
+                            </goals>
+                            <configuration>
+                                <name>EducatorStudio</name>
+                                <appVersion>${project.version}</appVersion>
+                                <vendor>org.edumentic</vendor>
+                                <runtimeImage>${java.home}</runtimeImage>
+                                <module>classbuilder/${main.class}</module>
+                                <modulePaths>
+                                    <modulePath>${project.build.directory}/lib</modulePath>
+                                </modulePaths>
+                                <destination>${project.build.directory}/installer</destination>
+                            </configuration>
+                        </execution>
+                    </executions>
+
+                </plugin>
+            </plugins>
+        </build>
+    </profile>
+    <profile>
+        <id>package-jar</id>
+        <build>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>3.2.0</version>
+                    <configuration>
+                        <archive>
+                            <manifest>
+                                <addClasspath>true</addClasspath>
+                                <classpathPrefix>lib/</classpathPrefix>
+                                <mainClass>${main.class}</mainClass>
+                            </manifest>
+                        </archive>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>3.2.0</version>
+                    <executions>
+                        <execution>
+                            <id>copy-dependencies</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>copy-dependencies</goal>
+                            </goals>
+                            <configuration>
+                                <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                                <overWriteReleases>false</overWriteReleases>
+                                <overWriteSnapshots>false</overWriteSnapshots>
+                                <overWriteIfNewer>true</overWriteIfNewer>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </build>
+    </profile>
+    </profiles>
 
 </project>

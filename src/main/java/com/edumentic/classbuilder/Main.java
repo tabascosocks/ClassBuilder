@@ -30,7 +30,7 @@ public class Main {
         }
 
         //work your magic!
-        log.info("Lets do this!");
+         log.info("Lets do this!");
     }
 
     /**
