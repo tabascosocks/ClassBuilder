@@ -30,7 +30,6 @@ import org.optaplanner.core.config.solver.SolverConfig;
 @Slf4j
 public class ClassBuilder {
 
-    static ClassBuilderGlobalConstraints constraints;
     static List<Student> students;
     static List<StudentClass> classes;
 
@@ -98,11 +97,11 @@ public class ClassBuilder {
                 System.exit(2);
             }
 
-            constraints = fromGeneralSheet(generalSheet);
+            fromGeneralSheet(generalSheet);
             students = fromStudentSheet(studentSheet);
             classes = fromClassesSheet(classSheet);
 
-            log.info("Loaded constraints: {}", constraints);
+            log.info("Loaded constraints: {}", ClassBuilderGlobalConstraints.getInstance());
             log.info("Loaded {} students.", students.size());
             log.info("Loaded {} classes.", classes.size());
 
@@ -112,6 +111,8 @@ public class ClassBuilder {
             log.error("Failed to process the Excel file: {}", e.getMessage(), e);
             System.exit(3);
         }
+
+        runSolver();
     }
 
     private static void runSolver() {
@@ -144,20 +145,18 @@ public class ClassBuilder {
     private static void onBetterSolutionFound(BestSolutionChangedEvent<ClassBuilderSolution> bestSolutionChangedEvent) {
         ClassBuilderSolution solution = bestSolutionChangedEvent.getNewBestSolution();
         currentBestSolution = solution;
-        log.info("Found next best solution {}", solution.toPrettyString());
+        log.info("Found next best solution {}", solution.toBriefString());
     }
 
-    public static ClassBuilderGlobalConstraints fromGeneralSheet(Sheet generalSheet) {
-        ClassBuilderGlobalConstraints constraints = new ClassBuilderGlobalConstraints();
+    public static void fromGeneralSheet(Sheet generalSheet) {
 
         // Assumes the first row has "Min Class Size", "Max Class Size"
         // And the second row has their respective values
         Row valueRow = generalSheet.getRow(1);
         if (valueRow != null) {
-            constraints.setMinClassSize((int) valueRow.getCell(0).getNumericCellValue());
-            constraints.setMaxClassSize((int) valueRow.getCell(1).getNumericCellValue());
+            ClassBuilderGlobalConstraints.getInstance().setMinClassSize((int) valueRow.getCell(0).getNumericCellValue());
+            ClassBuilderGlobalConstraints.getInstance().setMaxClassSize((int) valueRow.getCell(1).getNumericCellValue());
         }
-        return constraints;
     }
 
 

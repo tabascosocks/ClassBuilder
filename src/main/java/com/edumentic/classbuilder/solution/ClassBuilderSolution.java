@@ -88,6 +88,13 @@ public class ClassBuilderSolution {
         return studentAClass == studentBClass;
     }
 
+    public List<Student> getStudentsInClass(StudentClass studentClass){
+        return assignments.stream()
+                .filter(a -> a.getStudentClass() == studentClass)
+                .map(StudentClassAssignment::getStudent)
+                .toList();
+    }
+
     public String toPrettyString() {
         StringBuilder sb = new StringBuilder("ClassBuilderSolution {\n");
         sb.append("  assignments=[\n");
@@ -113,5 +120,12 @@ public class ClassBuilderSolution {
         sb.append("  score=").append(score).append("\n");
         sb.append("}");
         return sb.toString();
+    }
+
+    public String toBriefString() {
+        return String.format(
+                "ClassBuilderSolution: score=%s",
+                score
+        );
     }
 }
