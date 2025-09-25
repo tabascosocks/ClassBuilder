@@ -5,6 +5,7 @@ import com.edumentic.classbuilder.model.StudentClass;
 import lombok.Getter;
 import lombok.Setter;
 import org.optaplanner.core.api.domain.entity.PlanningEntity;
+import org.optaplanner.core.api.domain.lookup.PlanningId;
 import org.optaplanner.core.api.domain.variable.PlanningVariable;
 /**
  * Represents a planning entity for assigning a single {@link Student} to a {@link StudentClass}
@@ -31,14 +32,17 @@ import org.optaplanner.core.api.domain.variable.PlanningVariable;
  * </p>
  */
 @PlanningEntity
+@Getter
+@Setter
 public class StudentClassAssignment {
+    @PlanningId
+    private Long id;
     /**
      * The student to be assigned to a class.
      * <p>
      *     This field is considered a problem fact and does not change during planning.
      * </p>
      */
-    @Getter @Setter
     private Student student;
 
     /**
@@ -49,8 +53,13 @@ public class StudentClassAssignment {
      * </p>
      */
     @PlanningVariable(valueRangeProviderRefs = "studentClasses")
-    @Getter @Setter
     private StudentClass studentClass;
 
-    // Getters and setters omitted for brevity.
+    public String toPrettyString() {
+        return "StudentClassAssignment {\n" +
+                "  id=" + id + ",\n" +
+                "  student=" + (student == null ? "null" : student.toPrettyString()) + ",\n" +
+                "  studentClass=" + (studentClass == null ? "null" : studentClass.toPrettyString()) + "\n" +
+                '}';
+    }
 }

@@ -32,6 +32,16 @@ import lombok.Setter;
 public class StudentClass {
 
     @Getter @Setter
-    private int classNumber;
+    private String classCode;
+
+    @Getter @Setter
+    private String teacher;
+
+    public String toPrettyString() {
+        return "StudentClass {\n" +
+                "  classCode='" + classCode + "',\n" +
+                "  teacher='" + teacher + "'\n" +
+                '}';
+    }
 
 }

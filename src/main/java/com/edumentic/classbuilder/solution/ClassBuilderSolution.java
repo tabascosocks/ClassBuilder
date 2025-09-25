@@ -2,6 +2,8 @@ package com.edumentic.classbuilder.solution;
 
 import com.edumentic.classbuilder.model.Student;
 import com.edumentic.classbuilder.model.StudentClass;
+import lombok.Getter;
+import lombok.Setter;
 import org.optaplanner.core.api.domain.solution.PlanningEntityCollectionProperty;
 import org.optaplanner.core.api.domain.solution.PlanningScore;
 import org.optaplanner.core.api.domain.solution.PlanningSolution;
@@ -41,6 +43,8 @@ import java.util.List;
  * OptaPlanner will assign each student to a class, attempting to optimize according to domain constraints/rules.</p>
  */
 @PlanningSolution
+@Getter
+@Setter
 public class ClassBuilderSolution {
     /**
      * List of assignments representing the link between each student and the class they are (to be) placed in.
@@ -50,7 +54,7 @@ public class ClassBuilderSolution {
      * </p>
      */
     @PlanningEntityCollectionProperty
-    private List<StudentClassAssignment> solutionAssignments = new ArrayList<>();
+    private List<StudentClassAssignment> assignments = new ArrayList<>();
 
     /**
      * Collection of all classes available for student assignment.
@@ -61,7 +65,7 @@ public class ClassBuilderSolution {
      */
     @ValueRangeProvider(id = "studentClasses")
     @ProblemFactCollectionProperty
-    private List<StudentClass> availableStudentClasses = new ArrayList<>();
+    private List<StudentClass> studentClasses = new ArrayList<>();
 
     /**
      * The solution score calculated by OptaPlanner. Encodes how well the current assignments satisfy hard
@@ -69,4 +73,45 @@ public class ClassBuilderSolution {
      */
     @PlanningScore
     private HardSoftScore score;
+
+    public boolean inSameClass(Student studentA, Student studentB){
+        StudentClass studentAClass = assignments.stream()
+                .filter(a -> a.getStudent() == studentA)
+                .map(StudentClassAssignment::getStudentClass)
+                .findAny()
+                .orElseThrow();
+        StudentClass studentBClass = assignments.stream()
+                .filter(a -> a.getStudent() == studentB)
+                .map(StudentClassAssignment::getStudentClass)
+                .findAny()
+                .orElseThrow();
+        return studentAClass == studentBClass;
+    }
+
+    public String toPrettyString() {
+        StringBuilder sb = new StringBuilder("ClassBuilderSolution {\n");
+        sb.append("  assignments=[\n");
+        if (assignments != null) {
+            for (StudentClassAssignment a : assignments) {
+                sb.append("    ")
+                        .append(a == null ? "null" : a.toPrettyString().replace("\n", "\n    "))
+                        .append(",\n");
+            }
+        }
+        sb.append("  ],\n");
+
+        sb.append("  studentClasses=[\n");
+        if (studentClasses != null) {
+            for (StudentClass c : studentClasses) {
+                sb.append("    ")
+                        .append(c == null ? "null" : c.toPrettyString().replace("\n", "\n    "))
+                        .append(",\n");
+            }
+        }
+        sb.append("  ],\n");
+
+        sb.append("  score=").append(score).append("\n");
+        sb.append("}");
+        return sb.toString();
+    }
 }
