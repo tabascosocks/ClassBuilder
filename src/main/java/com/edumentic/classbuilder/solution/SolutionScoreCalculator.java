@@ -8,15 +8,15 @@ import org.optaplanner.core.api.score.calculator.EasyScoreCalculator;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-
 @Slf4j
 public class SolutionScoreCalculator implements EasyScoreCalculator<ClassBuilderSolution, HardSoftScore> {
 
     @Override
     public HardSoftScore calculateScore(ClassBuilderSolution classBuilderSolution) {
+        StringBuilder reportBuilder = new StringBuilder();
+        reportBuilder.append("<div class='scoring-report'>");
+
         // Hard constraints - Class size checks
-        HardSoftScore score = HardSoftScore.ZERO;
         int hardScore = 0;
         for(StudentClass studentClass : classBuilderSolution.getStudentClasses()){
             int minClassSize = ClassBuilderGlobalConstraints.getInstance().getMinClassSize();
@@ -24,45 +24,60 @@ public class SolutionScoreCalculator implements EasyScoreCalculator<ClassBuilder
             int classSize = (int)classBuilderSolution.getAssignments().stream()
                     .filter(a -> a.getStudentClass() == studentClass)
                     .count();
-            log.debug("Checking class [{}]: size is {}, min={}, max={}",
-                    studentClass.getClassCode(), classSize,
-                    ClassBuilderGlobalConstraints.getInstance().getMinClassSize(), ClassBuilderGlobalConstraints.getInstance().getMaxClassSize());
             if(classSize < minClassSize){
-                log.debug("Min Class size constraint violated for [{}]: size={}", studentClass.getClassCode(), classSize);
                 hardScore -= (minClassSize - classSize);
+                reportBuilder.append(String.format(
+                    "<div class='constraint-violation class-size'><span class='class-code'>%s</span>: <span class='violation'>Min class size violated</span> (%d &lt; %d)</div>",
+                    studentClass.getClassCode(), classSize, minClassSize));
             }
             else if(classSize > maxClassSize){
-                log.debug("Max Class size constraint violated for [{}]: size={}", studentClass.getClassCode(), classSize);
                 hardScore -= (classSize - maxClassSize);
+                reportBuilder.append(String.format(
+                    "<div class='constraint-violation class-size'><span class='class-code'>%s</span>: <span class='violation'>Max class size violated</span> (%d &gt; %d)</div>",
+                    studentClass.getClassCode(), classSize, maxClassSize));
+            } else {
+                reportBuilder.append(String.format(
+                    "<div class='constraint-ok class-size'><span class='class-code'>%s</span>: Class size OK (%d)</div>",
+                    studentClass.getClassCode(), classSize));
             }
         }
 
         // Student assignment constraints
         for(StudentClassAssignment assignment : classBuilderSolution.getAssignments()){
             Student student = assignment.getStudent();
-            // Check "cannot be with"
             for(Student cannotBeWith : student.getCannotBeWith()){
                 boolean together = classBuilderSolution.inSameClass(student, cannotBeWith);
-                log.debug("Checking 'cannot be with': {} and {} in same class? {}", student.getName(), cannotBeWith.getName(), together);
                 if(together){
-                    log.debug("'Cannot be with' violated: {} and {} together", student.getName(), cannotBeWith.getName());
                     hardScore--;
+                    reportBuilder.append(String.format(
+                        "<div class='constraint-violation cannot-be-with'><span class='student'>%s</span> and <span class='student'>%s</span>: <span class='violation'>'Cannot be with' violated</span></div>",
+                        student.getName(), cannotBeWith.getName()));
                 }
             }
-            // Check "must include friends"
             for(Student mustBeWith : student.getMustIncludeFriends()){
                 boolean together = classBuilderSolution.inSameClass(student, mustBeWith);
-                log.debug("Checking 'must be with': {} and {} in same class? {}", student.getName(), mustBeWith.getName(), together);
                 if(!together){
-                    log.debug("'Must include friend' violated: {} and {} NOT together", student.getName(), mustBeWith.getName());
                     hardScore--;
+                    reportBuilder.append(String.format(
+                        "<div class='constraint-violation must-be-with'><span class='student'>%s</span> and <span class='student'>%s</span>: <span class='violation'>'Must include friend' NOT together</span></div>",
+                        student.getName(), mustBeWith.getName()));
+                } else {
+                    reportBuilder.append(String.format(
+                        "<div class='constraint-ok must-be-with'><span class='student'>%s</span> and <span class='student'>%s</span>: <span class='ok'>'Must include' satisfied</span></div>",
+                        student.getName(), mustBeWith.getName()));
                 }
             }
         }
 
-        if(hardScore < 0) return HardSoftScore.ofHard(hardScore);
+        // Early exit if hard violated
+        if(hardScore < 0) {
+            reportBuilder.append(String.format("<div class='hardscore-summary'>Hard score: %d</div>", hardScore));
+            reportBuilder.append("</div>");
+            classBuilderSolution.setScoringReportHtml(reportBuilder.toString());
+            return HardSoftScore.ofHard(hardScore);
+        }
 
-        //Soft constraints
+        // Soft constraints
         int softScore = 0;
         for (StudentClassAssignment assignment : classBuilderSolution.getAssignments()) {
             Student student = assignment.getStudent();
@@ -70,22 +85,38 @@ public class SolutionScoreCalculator implements EasyScoreCalculator<ClassBuilder
                 boolean together = classBuilderSolution.inSameClass(student, goodToHave);
                 if (together) {
                     softScore += 1;
-                    log.debug("'Good to have' satisfied: {} and {} together", student.getName(), goodToHave.getName());
+                    reportBuilder.append(String.format(
+                        "<div class='soft-constraint-ok good-to-have'><span class='student'>%s</span> and <span class='student'>%s</span>: <span class='ok'>'Good to have' satisfied</span></div>",
+                        student.getName(), goodToHave.getName()));
                 }
             }
             for (Student avoidBeingWith : student.getAvoidBeingWith()) {
                 boolean together = classBuilderSolution.inSameClass(student, avoidBeingWith);
                 if (together) {
                     softScore -= 1;
-                    log.debug("'Avoid being With' not satisfied: {} and {} together", student.getName(), avoidBeingWith.getName());
+                    reportBuilder.append(String.format(
+                        "<div class='soft-constraint-violation avoid-being-with'><span class='student'>%s</span> and <span class='student'>%s</span>: <span class='violation'>'Avoid being with' NOT satisfied</span></div>",
+                        student.getName(), avoidBeingWith.getName()));
                 }
             }
         }
 
+        int numeracyVariance = scoreClassVarianceOf(classBuilderSolution, Student::getNumeracy);
+        softScore -= numeracyVariance;
+        reportBuilder.append(String.format(
+            "<div class='variance numeracy-variance'><span class='metric'>Numeracy variance penalty</span>: %d</div>", numeracyVariance));
+        int literacyVariance = scoreClassVarianceOf(classBuilderSolution, Student::getLiteracy);
+        softScore -= literacyVariance;
+        reportBuilder.append(String.format(
+            "<div class='variance literacy-variance'><span class='metric'>Literacy variance penalty</span>: %d</div>", literacyVariance));
+        int socialVariance = scoreClassVarianceOf(classBuilderSolution, Student::getSocialEmotional);
+        softScore -= socialVariance;
+        reportBuilder.append(String.format(
+            "<div class='variance socialemotional-variance'><span class='metric'>SocialEmotional variance penalty</span>: %d</div>", socialVariance));
 
-        softScore -= scoreClassVarianceOf(classBuilderSolution, Student::getNumeracy);
-        softScore -= scoreClassVarianceOf(classBuilderSolution, Student::getLiteracy);
-        softScore -= scoreClassVarianceOf(classBuilderSolution, Student::getSocialEmotional);
+        reportBuilder.append(String.format("<div class='score-summary'>Hard score: %d, Soft score: %d</div>", hardScore, softScore));
+        reportBuilder.append("</div>");
+        classBuilderSolution.setScoringReportHtml(reportBuilder.toString());
 
         return HardSoftScore.of(hardScore, softScore);
     }

@@ -74,6 +74,8 @@ public class ClassBuilderSolution {
     @PlanningScore
     private HardSoftScore score;
 
+    private String scoringReportHtml;
+
     public boolean inSameClass(Student studentA, Student studentB){
         StudentClass studentAClass = assignments.stream()
                 .filter(a -> a.getStudent() == studentA)
@@ -128,4 +130,50 @@ public class ClassBuilderSolution {
                 score
         );
     }
+
+    public String toHtmlReport() {
+        StringBuilder html = new StringBuilder();
+        html.append("<div class='classbuilder-report'>");
+
+        html.append("<h2 class='cb-section-title'>Class Allocations</h2>");
+        html.append("<div class='cb-class-list'>");
+
+        for (StudentClass studentClass : studentClasses) {
+            html.append("<div class='cb-class-block'>");
+            html.append(String.format("<h3 class='cb-class-title'>%s</h3>", studentClass.getClassCode()));
+
+            // Students in this class
+            List<Student> studentsIn = getStudentsInClass(studentClass);
+            if (studentsIn.isEmpty()) {
+                html.append("<div class='cb-class-empty'>No students assigned.</div>");
+            } else {
+                html.append("<table class='cb-student-table'><thead><tr><th>Name</th><th>Numeracy</th><th>Literacy</th><th>Social-Emotional</th></tr></thead><tbody>");
+                for (Student s : studentsIn) {
+                    html.append(String.format(
+                            "<tr><td class='cb-student-name'>%s</td>" +
+                                    "<td class='cb-metric'>%d</td>" +
+                                    "<td class='cb-metric'>%d</td>" +
+                                    "<td class='cb-metric'>%d</td></tr>",
+                            s.getName(),
+                            s.getNumeracy(),
+                            s.getLiteracy(),
+                            s.getSocialEmotional()
+                    ));
+                }
+                html.append("</tbody></table>");
+            }
+            html.append("</div>");
+        }
+        html.append("</div>"); // cb-class-list
+
+        // Scoring report
+        if (scoringReportHtml != null && !scoringReportHtml.isEmpty()) {
+            html.append("<h2 class='cb-section-title'>Scoring Breakdown</h2>");
+            html.append(scoringReportHtml);
+        }
+
+        html.append("</div>");
+        return html.toString();
+    }
+
 }

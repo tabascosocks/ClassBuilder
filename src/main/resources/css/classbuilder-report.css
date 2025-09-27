@@ -1,0 +1,109 @@
+.classbuilder-report {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    margin: 0 auto;
+    max-width: 950px;
+    background: #fafcff;
+    border-radius: 15px;
+    box-shadow: 0 3px 16px rgba(0,0,0,0.07);
+    padding: 30px 35px 28px 35px;
+}
+
+.cb-section-title {
+    color: #2e6582;
+    font-size: 1.45em;
+    font-weight: 700;
+    margin: 22px 0 12px 0;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #e0e7ef;
+    padding-bottom: 6px;
+}
+
+.cb-class-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 25px 28px;
+    margin-top: 12px;
+    margin-bottom: 28px;
+}
+
+.cb-class-block {
+    background: #f0f7fa;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px #b5e8ff33;
+    padding: 18px 20px 13px 20px;
+    min-width: 260px;
+    flex: 1 1 340px;
+}
+
+.cb-class-title {
+    margin: 0 0 10px 0;
+    color: #224d67;
+    font-size: 1.11em;
+    font-weight: bold;
+    letter-spacing: 0.0em;
+}
+
+.cb-class-empty {
+    font-style: italic;
+    color: #aaa;
+    padding: 8px 3px 8px 0;
+}
+
+.cb-student-table {
+    width: 100%;
+    margin: 0 0 5px 0;
+    border-collapse: collapse;
+    font-size: 1em;
+    box-shadow: 0 1px 4px #0001;
+}
+
+.cb-student-table thead th {
+    background: #d0eaf7;
+    color: #20506a;
+    padding: 7px 5px 7px 7px;
+    font-size: 0.98em;
+    font-weight: 600;
+    border-bottom: 2px solid #b8d7ee;
+}
+
+.cb-student-table tbody tr:nth-child(even) {
+    background: #f7fafc;
+}
+.cb-student-table tbody tr:nth-child(odd) {
+    background: #ecaadf18;
+}
+
+.cb-student-table td {
+    padding: 7px 10px 6px 7px;
+    color: #203040;
+    border: none;
+    line-height: 1.4;
+}
+
+.cb-metric {
+    text-align: center;
+    color: #3c6b94;
+    font-weight: 500;
+}
+
+.cb-student-name {
+    font-weight: 500;
+    color: #366db0;
+    letter-spacing: .01em;
+}
+
+/* Responsive adjustments */
+@media (max-width: 700px) {
+    .classbuilder-report {
+        padding: 12px 2vw;
+    }
+    .cb-class-list {
+        display: block;
+        gap: 0;
+    }
+    .cb-class-block {
+        margin-bottom: 25px;
+        min-width: 0;
+        padding: 13px 7px 10px 7px;
+    }
+}

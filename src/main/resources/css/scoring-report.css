@@ -1,0 +1,108 @@
+.scoring-report {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #fdfdfd;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    padding: 28px 32px 22px 32px;
+    color: #222;
+    max-width: 850px;
+    margin: 30px auto 0 auto;
+}
+
+/* Constraint summary rows */
+.scoring-report .constraint-violation,
+.scoring-report .soft-constraint-violation {
+    background: #fdf1f0;
+    border-left: 4px solid #e54b4b;
+    color: #c31414;
+    margin: 10px 0 6px 0;
+    padding: 9px 17px;
+    border-radius: 6px;
+    font-size: 1.03em;
+    transition: background 0.3s;
+}
+
+.scoring-report .constraint-ok,
+.scoring-report .soft-constraint-ok {
+    background: #f0f7fa;
+    border-left: 4px solid #25bf6c;
+    color: #166e34;
+    margin: 10px 0 6px 0;
+    padding: 9px 17px;
+    border-radius: 6px;
+    font-size: 1.03em;
+    transition: background 0.3s;
+}
+
+.scoring-report .constraint-violation .violation,
+.scoring-report .soft-constraint-violation .violation {
+    font-weight: bold;
+    color: #a01010;
+}
+
+.scoring-report .constraint-ok .ok,
+.scoring-report .soft-constraint-ok .ok {
+    font-weight: bold;
+    color: #048c6b;
+}
+
+.scoring-report .class-code,
+.scoring-report .student {
+    font-weight: 600;
+    padding: 1px 2px 1px 2px;
+    color: #197bbd;
+}
+.scoring-report .student {
+    background: #eef6fb;
+    border-radius: 3px;
+    margin-right: 2px;
+}
+
+/* Variance rows */
+.scoring-report .variance {
+    background: #ede7ff;
+    border-left: 4px solid #a384e0;
+    color: #443e74;
+    margin: 12px 0 5px 0;
+    padding: 8px 17px;
+    border-radius: 5px;
+    font-size: 1.02em;
+    display: flex;
+    align-items: center;
+}
+.scoring-report .metric {
+    font-weight: 600;
+    margin-right: 7px;
+}
+
+/* Score summary */
+.scoring-report .score-summary,
+.scoring-report .hardscore-summary {
+    margin-top: 20px;
+    font-size: 1.16em;
+    font-weight: 700;
+    color: #333;
+    background: linear-gradient(93deg,#e6f9ed 60%,#fdeeee 220%);
+    border-radius: 8px;
+    padding: 11px 15px 11px 22px;
+    border: 1px solid #e8e8e8;
+    box-shadow: 0 1px 4px #0002;
+}
+
+/* Details on hover */
+.scoring-report .constraint-violation:hover,
+.scoring-report .constraint-ok:hover,
+.scoring-report .soft-constraint-ok:hover,
+.scoring-report .soft-constraint-violation:hover,
+.scoring-report .variance:hover {
+    background: #fff3c1 !important;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+@media (max-width: 650px) {
+    .scoring-report {
+        padding: 15px 7px 13px 7px;
+        font-size: 0.99em;
+    }
+}
