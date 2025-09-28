@@ -10,11 +10,21 @@
 }
 
 /* Constraint summary rows */
-.scoring-report .constraint-violation,
-.scoring-report .soft-constraint-violation {
+.scoring-report .constraint-violation{
     background: #fdf1f0;
     border-left: 4px solid #e54b4b;
     color: #c31414;
+    margin: 10px 0 6px 0;
+    padding: 9px 17px;
+    border-radius: 6px;
+    font-size: 1.03em;
+    transition: background 0.3s;
+}
+
+.scoring-report .soft-constraint-violation {
+    background: #fffbea;                    /* soft yellow */
+    border-left: 4px solid #ffe066;         /* soft yellow border */
+    color: #b09817;                         /* yellow-brown text */
     margin: 10px 0 6px 0;
     padding: 9px 17px;
     border-radius: 6px;

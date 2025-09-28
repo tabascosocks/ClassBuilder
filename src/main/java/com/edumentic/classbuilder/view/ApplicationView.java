@@ -2,6 +2,7 @@ package com.edumentic.classbuilder.view;
 
 import com.edumentic.classbuilder.viewmodel.ApplicationViewModel;
 import com.edumentic.classbuilder.viewmodel.DatafileParseException;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -51,44 +52,57 @@ public class ApplicationView extends VBox {
 
     @FXML
     private void initialize() {
+        // Bind the datafile summary label's text property to the ViewModel's datafile summary property.
         datafileSummaryLabel.textProperty().bind(viewModel.datafileSummaryProperty());
 
+        // Show load instructions only when no data is loaded.
         loadDatafileInstructionsLabel.visibleProperty().bind(viewModel.dataIsLoadedProperty().not());
+        // Show the datafile info section only when data is loaded.
         datafileInfoHBox.visibleProperty().bind(viewModel.dataIsLoadedProperty());
+        // Enable the start solver button only when data is loaded.
         startSolverButton.disableProperty().bind(viewModel.dataIsLoadedProperty().not());
 
+        // Update Start/Stop button text and default status depending on solver running state.
         viewModel.runningSolverProperty().addListener((prop, oldV, newV) -> {
             if(newV){
                 startSolverButton.setText("Stop");
                 startSolverButton.setDefaultButton(false);
+                startSolverButton.setCancelButton(true);
             }else{
                 startSolverButton.setText("Start");
                 startSolverButton.setDefaultButton(true);
+                startSolverButton.setCancelButton(false);
             }
         });
 
+        // Disable the solver content UI while the solver is not running.
         solverContentSplitPane.disableProperty().bind(viewModel.runningSolverProperty().not());
+        // Bind the solution history list to the solutions property in the ViewModel.
         solutionHistoryList.itemsProperty().bind(viewModel.solutionsProperty());
+        // Bind the ViewModel's currentSolution to the selected item in the solution history list.
         viewModel.currentSolutionProperty().bind(solutionHistoryList.getSelectionModel().selectedItemProperty());
 
+        // Listen for changes in the current solution selection to update score labels and HTML preview.
         viewModel.currentSolutionProperty().addListener((prop, oldV, newV) -> {
             if(newV == null){
+                // When nothing is selected, show dashes and clear the webview.
                 currentSolutinHardScoreLabel.setText("-");
                 currentsolutionSoftScoreLabel.setText("-");
                 selectedSolutionReportWebView.getEngine().loadContent("");
             }else{
+                // Show the scores of the selected solution.
                 currentSolutinHardScoreLabel.setText(String.valueOf(newV.getHardScore()));
                 currentsolutionSoftScoreLabel.setText(String.valueOf(newV.getSoftScore()));
-                // Read CSS contents from resources
+                // Read required CSS files from resources for the report.
                 String css1 = "";
                 String css2 = "";
                 try {
                     css1 = new String(getClass().getResourceAsStream("/css/classbuilder-report.css").readAllBytes());
                     css2 = new String(getClass().getResourceAsStream("/css/scoring-report.css").readAllBytes());
                 } catch (Exception e) {
-                    // optionally handle error or log
+                    // Swallow errors or log if necessary.
                 }
-                // Wrap the solution HTML report with <html> and <style>
+                // Compose the HTML with embedded styles and load into webview.
                 String html = """
                     <html>
                     <head>
@@ -104,10 +118,15 @@ public class ApplicationView extends VBox {
             }
         });
 
-        viewModel.solutionsProperty().addListener((ListChangeListener<? super ApplicationViewModel.ClassSolutionData>) (evt) -> {
-              if(! evt.getList().isEmpty()){
-                  solutionHistoryList.getSelectionModel().select(0);
-              }
+        // Ensure the latest element in solution history list is auto-selected when added.
+        solutionHistoryList.getItems().addListener((ListChangeListener<? super ApplicationViewModel.ClassSolutionData>) evt -> {
+            while(evt.next()) {
+                if (evt.wasAdded() && !solutionHistoryList.getItems().isEmpty()) {
+                    javafx.application.Platform.runLater(() ->
+                        solutionHistoryList.getSelectionModel().selectFirst()
+                    );
+                }
+            }
         });
 
     }

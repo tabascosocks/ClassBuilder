@@ -12,6 +12,7 @@ import org.optaplanner.core.api.domain.valuerange.ValueRangeProvider;
 import org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -138,12 +139,12 @@ public class ClassBuilderSolution {
         html.append("<h2 class='cb-section-title'>Class Allocations</h2>");
         html.append("<div class='cb-class-list'>");
 
-        for (StudentClass studentClass : studentClasses) {
+        for (StudentClass studentClass : studentClasses.stream().sorted(Comparator.comparing(StudentClass::getClassCode)).toList()) {
             html.append("<div class='cb-class-block'>");
             html.append(String.format("<h3 class='cb-class-title'>%s</h3>", studentClass.getClassCode()));
 
             // Students in this class
-            List<Student> studentsIn = getStudentsInClass(studentClass);
+            List<Student> studentsIn = getStudentsInClass(studentClass).stream().sorted(Comparator.comparing(Student::getName)).toList();
             if (studentsIn.isEmpty()) {
                 html.append("<div class='cb-class-empty'>No students assigned.</div>");
             } else {
