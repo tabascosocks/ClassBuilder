@@ -14,4 +14,5 @@ open module classbuilder {
     requires org.kordamp.ikonli.javafx;
     requires org.kordamp.ikonli.material2;
     requires javafx.graphics;
+    requires javafx.controls;
 }

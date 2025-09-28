@@ -3,13 +3,6 @@ package com.edumentic.classbuilder;
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 
-import com.edumentic.classbuilder.io.StdInMonitor;
-import com.edumentic.classbuilder.model.Student;
-import com.edumentic.classbuilder.model.StudentClass;
-import com.edumentic.classbuilder.solution.ClassBuilderGlobalConstraints;
-import com.edumentic.classbuilder.solution.ClassBuilderSolution;
-import com.edumentic.classbuilder.solution.SolutionScoreCalculator;
-import com.edumentic.classbuilder.solution.StudentClassAssignment;
 import com.edumentic.classbuilder.view.ApplicationView;
 import com.edumentic.classbuilder.viewmodel.ApplicationViewModel;
 import javafx.application.Application;

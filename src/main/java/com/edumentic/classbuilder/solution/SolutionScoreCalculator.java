@@ -1,5 +1,6 @@
 package com.edumentic.classbuilder.solution;
 
+import com.edumentic.classbuilder.model.Gender;
 import com.edumentic.classbuilder.model.Student;
 import com.edumentic.classbuilder.model.StudentClass;
 import lombok.extern.slf4j.Slf4j;
@@ -18,8 +19,8 @@ public class SolutionScoreCalculator implements EasyScoreCalculator<ClassBuilder
         // Hard constraints - Class size checks
         int hardScore = 0;
         for(StudentClass studentClass : classBuilderSolution.getStudentClasses()){
-            int minClassSize = ClassBuilderGlobalConstraints.getInstance().getMinClassSize();
-            int maxClassSize = ClassBuilderGlobalConstraints.getInstance().getMaxClassSize();
+            int minClassSize = ClassBuilderConstraints.getInstance().getMinClassSize();
+            int maxClassSize = ClassBuilderConstraints.getInstance().getMaxClassSize();
             int classSize = (int)classBuilderSolution.getAssignments().stream()
                     .filter(a -> a.getStudentClass() == studentClass)
                     .count();
@@ -48,31 +49,36 @@ public class SolutionScoreCalculator implements EasyScoreCalculator<ClassBuilder
 
         for(StudentClassAssignment assignment : classBuilderSolution.getAssignments()){
             Student student = assignment.getStudent();
-            for(Student cannotBeWith : student.getCannotBeWith()){
-                boolean together = classBuilderSolution.inSameClass(student, cannotBeWith);
-                if(together){
-                    hardScore--;
-                    addConstraintReport(student, constraintReports,
-                            String.format(
-                                "<div class='constraint-violation cannot-be-with'><span class='student'>%s</span> and <span class='student'>%s</span>: <span class='violation'>'Cannot be with' violated</span></div>",
-                            student.getName(), cannotBeWith.getName()));
+            if(ClassBuilderConstraints.getInstance().isMustAvoidOthers()){
+                for(Student cannotBeWith : student.getCannotBeWith()){
+                    boolean together = classBuilderSolution.inSameClass(student, cannotBeWith);
+                    if(together){
+                        hardScore--;
+                        addConstraintReport(student, constraintReports,
+                                String.format(
+                                        "<div class='constraint-violation cannot-be-with'><span class='student'>%s</span> and <span class='student'>%s</span>: <span class='violation'>'Cannot be with' violated</span></div>",
+                                        student.getName(), cannotBeWith.getName()));
+                    }
                 }
             }
-            for(Student mustBeWith : student.getMustIncludeFriends()){
-                boolean together = classBuilderSolution.inSameClass(student, mustBeWith);
-                if(!together){
-                    hardScore--;
-                    addConstraintReport(student, constraintReports,
-                        String.format(
-                        "<div class='constraint-violation must-be-with'><span class='student'>%s</span> and <span class='student'>%s</span>: <span class='violation'>'Must include friend' NOT together</span></div>",
-                        student.getName(), mustBeWith.getName()));
-                } else {
-                    addConstraintReport(student, constraintReports,
-                        String.format(
-                        "<div class='constraint-ok must-be-with'><span class='student'>%s</span> and <span class='student'>%s</span>: <span class='ok'>'Must include' satisfied</span></div>",
-                        student.getName(), mustBeWith.getName()));
+            if(ClassBuilderConstraints.getInstance().isMustIncludeOthers()){
+                for(Student mustBeWith : student.getMustIncludeFriends()){
+                    boolean together = classBuilderSolution.inSameClass(student, mustBeWith);
+                    if(!together){
+                        hardScore--;
+                        addConstraintReport(student, constraintReports,
+                                String.format(
+                                        "<div class='constraint-violation must-be-with'><span class='student'>%s</span> and <span class='student'>%s</span>: <span class='violation'>'Must include friend' NOT together</span></div>",
+                                        student.getName(), mustBeWith.getName()));
+                    } else {
+                        addConstraintReport(student, constraintReports,
+                                String.format(
+                                        "<div class='constraint-ok must-be-with'><span class='student'>%s</span> and <span class='student'>%s</span>: <span class='ok'>'Must include' satisfied</span></div>",
+                                        student.getName(), mustBeWith.getName()));
+                    }
                 }
             }
+
         }
 
         // Early exit if hard violated
@@ -85,48 +91,91 @@ public class SolutionScoreCalculator implements EasyScoreCalculator<ClassBuilder
         int softScore = 0;
         for (StudentClassAssignment assignment : classBuilderSolution.getAssignments()) {
             Student student = assignment.getStudent();
-            for (Student goodToBeWith : student.getShouldIncludeFriends()) {
-                boolean together = classBuilderSolution.inSameClass(student, goodToBeWith);
-                if (together) {
-                    softScore += 1;
-                    addConstraintReport(student, constraintReports,
-                        String.format(
-                        "<div class='soft-constraint-ok'><span class='student'>%s</span> and <span class='student'>%s</span>: <span class='ok'>'Good to be with' satisfied</span></div>",
-                        student.getName(), goodToBeWith.getName()));
-                }else{
-                    addConstraintReport(student, constraintReports,
-                            String.format(
-                            "<div class='soft-constraint-violation'><span class='student'>%s</span> and <span class='student'>%s</span>: <span class='violation'>'Good to be with' NOT satisfied</span></div>",
-                            student.getName(), goodToBeWith.getName()));
+            if(ClassBuilderConstraints.getInstance().isShouldIncludeOthers()){
+                for (Student goodToBeWith : student.getShouldIncludeFriends()) {
+                    boolean together = classBuilderSolution.inSameClass(student, goodToBeWith);
+                    if (together) {
+                        softScore += 1;
+                        addConstraintReport(student, constraintReports,
+                                String.format(
+                                        "<div class='soft-constraint-ok'><span class='student'>%s</span> and <span class='student'>%s</span>: <span class='ok'>'Good to be with' satisfied</span></div>",
+                                        student.getName(), goodToBeWith.getName()));
+                    }else{
+                        addConstraintReport(student, constraintReports,
+                                String.format(
+                                        "<div class='soft-constraint-violation'><span class='student'>%s</span> and <span class='student'>%s</span>: <span class='violation'>'Good to be with' NOT satisfied</span></div>",
+                                        student.getName(), goodToBeWith.getName()));
+                    }
                 }
             }
-            for (Student avoidBeingWith : student.getAvoidBeingWith()) {
-                boolean together = classBuilderSolution.inSameClass(student, avoidBeingWith);
-                if (together) {
-                    softScore -= 1;
-                    addConstraintReport(student, constraintReports,
-                        String.format(
-                        "<div class='soft-constraint-violation'><span class='student'>%s</span> and <span class='student'>%s</span>: <span class='violation'>'Avoid being with' NOT satisfied</span></div>",
-                        student.getName(), avoidBeingWith.getName()));
+
+            if(ClassBuilderConstraints.getInstance().isShouldAvoidOthers()){
+                for (Student avoidBeingWith : student.getAvoidBeingWith()) {
+                    boolean together = classBuilderSolution.inSameClass(student, avoidBeingWith);
+                    if (together) {
+                        softScore -= 1;
+                        addConstraintReport(student, constraintReports,
+                                String.format(
+                                        "<div class='soft-constraint-violation'><span class='student'>%s</span> and <span class='student'>%s</span>: <span class='violation'>'Avoid being with' NOT satisfied</span></div>",
+                                        student.getName(), avoidBeingWith.getName()));
+                    }
                 }
             }
+
         }
 
-        int numeracyVariance = scoreClassVarianceOf(classBuilderSolution, Student::getNumeracy);
-        softScore -= numeracyVariance;
-        addConstraintReport(classBuilderSolution, constraintReports,
-            String.format(
-            "<div class='variance'><span class='metric'>Numeracy variance penalty</span>: %d</div>", numeracyVariance));
-        int literacyVariance = scoreClassVarianceOf(classBuilderSolution, Student::getLiteracy);
-        softScore -= literacyVariance;
-        addConstraintReport(classBuilderSolution, constraintReports,
-            String.format(
-            "<div class='variance'><span class='metric'>Literacy variance penalty</span>: %d</div>", literacyVariance));
-        int socialVariance = scoreClassVarianceOf(classBuilderSolution, Student::getSocialEmotional);
-        softScore -= socialVariance;
-        addConstraintReport(classBuilderSolution, constraintReports,
-            String.format(
-            "<div class='variance'><span class='metric'>SocialEmotional variance penalty</span>: %d</div>", socialVariance));
+        if(ClassBuilderConstraints.getInstance().isBalanceNumeracy()){
+            int numeracyVariance = scoreVarianceBetweenClassesFor(classBuilderSolution,
+                    (sc, students) -> {
+                        return students.stream().mapToInt(Student::getNumeracy).average().orElse(2.5);
+                    }
+            );
+            softScore -= numeracyVariance;
+            addConstraintReport(classBuilderSolution, constraintReports,
+                    String.format(
+                            "<div class='variance'><span class='metric'>Numeracy variance penalty</span>: %d</div>", numeracyVariance));
+        }
+
+        if(ClassBuilderConstraints.getInstance().isBalanceLiteracy()){
+            int literacyVariance = scoreVarianceBetweenClassesFor(classBuilderSolution,
+                    (sc, students) -> {
+                        return students.stream().mapToInt(Student::getLiteracy).average().orElse(2.5);
+                    }
+            );
+            softScore -= literacyVariance;
+            addConstraintReport(classBuilderSolution, constraintReports,
+                    String.format(
+                            "<div class='variance'><span class='metric'>Literacy variance penalty</span>: %d</div>", literacyVariance));
+        }
+
+        if(ClassBuilderConstraints.getInstance().isBalanceSocialEmotional()){
+            int socialVariance = scoreVarianceBetweenClassesFor(classBuilderSolution,
+                    (sc, students) -> {
+                        return students.stream().mapToInt(Student::getSocialEmotional).average().orElse(2.5);
+                    }
+            );
+            softScore -= socialVariance;
+            addConstraintReport(classBuilderSolution, constraintReports,
+                    String.format(
+                            "<div class='variance'><span class='metric'>SocialEmotional variance penalty</span>: %d</div>", socialVariance));
+
+        }
+
+        if(ClassBuilderConstraints.getInstance().isBalanceGender()){
+            int genderProportionVariance = scoreVarianceBetweenClassesFor(classBuilderSolution,
+                    (sc, students) -> {
+                        long numMale = students.stream().map(s -> s.getGender() == Gender.MALE).count();
+                        long numFemale = students.stream().map(s -> s.getGender() == Gender.FEMALE).count();
+                        if(numFemale == 0 & numMale == 0) return 0.5;
+                        return (double) numMale / (numMale + numFemale);
+                    }
+            );
+            softScore -= genderProportionVariance;
+            addConstraintReport(classBuilderSolution, constraintReports,
+                    String.format(
+                            "<div class='variance'><span class='metric'>Gender variance penalty</span>: %d</div>", genderProportionVariance));
+
+        }
 
         classBuilderSolution.setScoringReportHtml(compileConstraintReport(constraintReports, hardScore, softScore));
         return HardSoftScore.of(hardScore, softScore);
@@ -146,6 +195,14 @@ public class SolutionScoreCalculator implements EasyScoreCalculator<ClassBuilder
                 reportBuilder.append(report);
             }
         }
+        //then anything else
+        for(ClassBuilderSolution solution : container.keySet().stream()
+                .filter(o -> o instanceof ClassBuilderSolution)
+                .map(o -> (ClassBuilderSolution)o).toList()){
+            for(String report : container.get(solution)){
+                reportBuilder.append(report);
+            }
+        }
         //then the students
         for(Student student : container.keySet().stream()
                 .filter(o -> o instanceof Student)
@@ -153,14 +210,6 @@ public class SolutionScoreCalculator implements EasyScoreCalculator<ClassBuilder
                 .sorted(Comparator.comparing(Student::getName))
                 .toList()){
             for(String report : container.get(student)){
-                reportBuilder.append(report);
-            }
-        }
-        //then anything else
-        for(ClassBuilderSolution solution : container.keySet().stream()
-                .filter(o -> o instanceof ClassBuilderSolution)
-                .map(o -> (ClassBuilderSolution)o).toList()){
-            for(String report : container.get(solution)){
                 reportBuilder.append(report);
             }
         }
@@ -183,28 +232,26 @@ public class SolutionScoreCalculator implements EasyScoreCalculator<ClassBuilder
         reports.add(report);
     }
 
-    private int scoreClassVarianceOf(ClassBuilderSolution classBuilderSolution, StudentMetricProvider studentMetricProvider){
-        List<StudentClass> classes = classBuilderSolution.getStudentClasses();
-        List<Double> classAverages = new ArrayList<>();
-        for (StudentClass studentClass : classes) {
-            List<Student> studentsInClass = classBuilderSolution.getStudentsInClass(studentClass);
-            double averageNumeracy = studentsInClass.stream()
-                    .mapToInt(studentMetricProvider::getMetric)
-                    .average()
-                    .orElse(0.0);
-            classAverages.add(averageNumeracy);
-        }
-        double overallMean = classAverages.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
-        double numeracyVariance = classAverages.stream()
-                .mapToDouble(avg -> (avg - overallMean) * (avg - overallMean))
-                .average()
-                .orElse(0.0);
+    private int scoreVarianceBetweenClassesFor(ClassBuilderSolution classBuilderSolution, ClassMetricProvider metricProvider){
+        double[] classMetrics = classBuilderSolution.getStudentClasses().stream()
+                .mapToDouble(sc -> metricProvider.getMetric(sc, classBuilderSolution.getStudentsInClass(sc)))
+                .toArray();
 
-        return (int)Math.round(numeracyVariance); // Or scale as appropriate
+        double populationMean = Arrays.stream(classMetrics)
+                .average()
+                .orElse(1.0);
+
+        double totalVariance = 0.0;
+
+        for(double metric : classMetrics){
+            totalVariance += Math.abs(populationMean - metric);
+        }
+
+        return (int)Math.round(ClassBuilderConstraints.getInstance().getClassMetricVarianceSensitivity() * totalVariance);
     }
 
     @FunctionalInterface
-    private interface StudentMetricProvider{
-        int getMetric(Student student);
+    private interface ClassMetricProvider{
+        double getMetric(StudentClass studentClass, List<Student> studentsInClass);
     }
 }

@@ -16,6 +16,7 @@ public class Student {
     private int numeracy;        // 1-5
     private int literacy;        // 1-5
     private int socialEmotional;
+    private Gender gender;
 
     public String toPrettyString() {
         return "Student {\n" +
@@ -27,6 +28,7 @@ public class Student {
                 "  numeracy=" + numeracy + ",\n" +
                 "  literacy=" + literacy + ",\n" +
                 "  socialEmotional=" + socialEmotional + "\n" +
+                "  gender=" + gender + "\n" +
                 '}';
     }
 

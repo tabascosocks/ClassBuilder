@@ -1,10 +1,10 @@
 package com.edumentic.classbuilder.viewmodel;
 
+import com.edumentic.classbuilder.model.Gender;
 import com.edumentic.classbuilder.model.Student;
 import com.edumentic.classbuilder.model.StudentClass;
-import com.edumentic.classbuilder.solution.ClassBuilderGlobalConstraints;
+import com.edumentic.classbuilder.solution.ClassBuilderConstraints;
 import com.edumentic.classbuilder.solution.ClassBuilderSolution;
-import com.edumentic.classbuilder.solution.SolutionScoreCalculator;
 import com.edumentic.classbuilder.solution.StudentClassAssignment;
 import javafx.application.Platform;
 import javafx.beans.property.*;
@@ -18,14 +18,10 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
-import org.optaplanner.core.api.solver.Solver;
-import org.optaplanner.core.api.solver.SolverFactory;
 import org.optaplanner.core.api.solver.event.BestSolutionChangedEvent;
-import org.optaplanner.core.config.solver.SolverConfig;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -43,12 +39,23 @@ public class ApplicationViewModel implements BestSolutionConsumer{
     private List<StudentClass> classes;
     private File datafile;
 
-
-
     private final ListProperty<ClassSolutionData> solutions = new SimpleListProperty<>(FXCollections.observableArrayList());
     private final ObjectProperty<ClassSolutionData> currentSolution = new SimpleObjectProperty<>(null);
 
     private final StringProperty datafileSummary = new SimpleStringProperty();
+
+    private final BooleanProperty mustIncludeOthers = new SimpleBooleanProperty();
+    private final BooleanProperty shouldIncludeOthers = new SimpleBooleanProperty();
+    private final BooleanProperty mustAvoidOthers = new SimpleBooleanProperty();
+    private final BooleanProperty shouldAvoidOthers = new SimpleBooleanProperty();
+    private final BooleanProperty balanceNumeracy = new SimpleBooleanProperty();
+    private final BooleanProperty balanceLiteracy = new SimpleBooleanProperty();
+    private final BooleanProperty balanceSocialEmotional = new SimpleBooleanProperty();
+    private final BooleanProperty balanceGender = new SimpleBooleanProperty();
+
+    private final IntegerProperty minClassSize = new SimpleIntegerProperty();
+    private final IntegerProperty maxClassSize = new SimpleIntegerProperty();
+
 
     private final BooleanProperty runningSolver = new SimpleBooleanProperty(false);
     private final BooleanProperty dataIsLoaded = new SimpleBooleanProperty(false);
@@ -77,6 +84,39 @@ public class ApplicationViewModel implements BestSolutionConsumer{
         solverService.setOnCancelled(evt -> {
             runningSolver.set(false);
         });
+
+        ClassBuilderConstraints constraints = ClassBuilderConstraints.getInstance();
+
+        mustIncludeOthers.set(constraints.isMustIncludeOthers());
+        mustIncludeOthers.addListener((obs, oldV, newV) -> constraints.setMustIncludeOthers(newV));
+
+        shouldIncludeOthers.set(constraints.isShouldIncludeOthers());
+        shouldIncludeOthers.addListener((obs, oldV, newV) -> constraints.setShouldIncludeOthers(newV));
+
+        mustAvoidOthers.set(constraints.isMustAvoidOthers());
+        mustAvoidOthers.addListener((obs, oldV, newV) -> constraints.setMustAvoidOthers(newV));
+
+        shouldAvoidOthers.set(constraints.isShouldAvoidOthers());
+        shouldAvoidOthers.addListener((obs, oldV, newV) -> constraints.setShouldAvoidOthers(newV));
+
+        balanceNumeracy.set(constraints.isBalanceNumeracy());
+        balanceNumeracy.addListener((obs, oldV, newV) -> constraints.setBalanceNumeracy(newV));
+
+        balanceLiteracy.set(constraints.isBalanceLiteracy());
+        balanceLiteracy.addListener((obs, oldV, newV) -> constraints.setBalanceLiteracy(newV));
+
+        balanceSocialEmotional.set(constraints.isBalanceSocialEmotional());
+        balanceSocialEmotional.addListener((obs, oldV, newV) -> constraints.setBalanceSocialEmotional(newV));
+
+        balanceGender.set(constraints.isBalanceGender());
+        balanceGender.addListener((obs, oldV, newV) -> constraints.setBalanceGender(newV));
+
+        minClassSize.set(constraints.getMinClassSize());
+        minClassSize.addListener((obs, oldV, newV) -> constraints.setMinClassSize(newV.intValue()));
+
+        maxClassSize.set(constraints.getMaxClassSize());
+        maxClassSize.addListener((obs, oldV, newV) -> constraints.setMaxClassSize(newV.intValue()));
+
     }
 
     public void runSolver() {
@@ -100,19 +140,17 @@ public class ApplicationViewModel implements BestSolutionConsumer{
         try (InputStream fileStream = new FileInputStream(datafile);
              Workbook workbook = WorkbookFactory.create(fileStream)) {
 
-            Sheet generalSheet = workbook.getSheet("General");
             Sheet studentSheet = workbook.getSheet("Students");
             Sheet classSheet = workbook.getSheet("Classes");
 
-            if (generalSheet == null || studentSheet == null || classSheet == null) {
+            if (studentSheet == null || classSheet == null) {
                 throw new DatafileParseException("Missing required sheets. Ensure the spreadsheet has 'General', 'Students', and 'Classes' sheets.");
             }
 
-            fromGeneralSheet(generalSheet);
             students = fromStudentSheet(studentSheet);
             classes = fromClassesSheet(classSheet);
 
-            datafileSummary.set("Loaded " + students.size() + " students for " + classes.size() + "classes");
+            datafileSummary.set("Loaded " + students.size() + " students for " + classes.size() + " classes");
 
             dataIsLoaded.set(true);
 
@@ -133,16 +171,19 @@ public class ApplicationViewModel implements BestSolutionConsumer{
         log.info("Found next best solution {}", solution.toBriefString());
     }
 
+    /*
     public void fromGeneralSheet(Sheet generalSheet) {
 
         // Assumes the first row has "Min Class Size", "Max Class Size"
         // And the second row has their respective values
         Row valueRow = generalSheet.getRow(1);
         if (valueRow != null) {
-            ClassBuilderGlobalConstraints.getInstance().setMinClassSize((int) valueRow.getCell(0).getNumericCellValue());
-            ClassBuilderGlobalConstraints.getInstance().setMaxClassSize((int) valueRow.getCell(1).getNumericCellValue());
+            ClassBuilderConstraints.getInstance().setMinClassSize((int) valueRow.getCell(0).getNumericCellValue());
+            ClassBuilderConstraints.getInstance().setMaxClassSize((int) valueRow.getCell(1).getNumericCellValue());
         }
     }
+
+     */
 
 
     public List<Student> fromStudentSheet(Sheet studentSheet) throws DatafileParseException {
@@ -159,12 +200,13 @@ public class ApplicationViewModel implements BestSolutionConsumer{
             }
             if (blank) continue;
 
-            // Required: name and numeracy/literacy/social-emotional scores (cells 0, 5, 6, 7)
+            // Required: name
             if (row.getCell(0) == null || row.getCell(0).getStringCellValue().trim().isEmpty()) {
                 throw new DatafileParseException(
                         String.format("Missing required student name in row %d", i + 1)
                 );
             }
+            //required: numeracy/literacy/social-emotional scores (cells 0, 5, 6, 7)
             for (int c : new int[]{5, 6, 7}) {
                 if (row.getCell(c) == null || row.getCell(c).getCellType() != org.apache.poi.ss.usermodel.CellType.NUMERIC) {
                     throw new DatafileParseException(
@@ -181,15 +223,7 @@ public class ApplicationViewModel implements BestSolutionConsumer{
         for (int i = 1, j = 0; i <= studentSheet.getLastRowNum() && j < students.size(); i++) {
             Row row = studentSheet.getRow(i);
             if (row == null) continue;
-            if (row.getCell(0) == null || row.getCell(0).getStringCellValue().trim().isEmpty()) continue;
 
-            for (int c : new int[]{5, 6, 7}) {
-                if (row.getCell(c) == null || row.getCell(c).getCellType() != org.apache.poi.ss.usermodel.CellType.NUMERIC) {
-                    throw new DatafileParseException(
-                            String.format("Student row %d: Missing or non-numeric required score at column %d", i + 1, c + 1)
-                    );
-                }
-            }
             Student s = students.get(j++);
             s.setMustIncludeFriends(resolveByNameList(row.getCell(1), students, s.getName(), "mustIncludeFriends"));
             s.setShouldIncludeFriends(resolveByNameList(row.getCell(2), students, s.getName(), "shouldIncludeFriends"));
@@ -198,6 +232,13 @@ public class ApplicationViewModel implements BestSolutionConsumer{
             s.setNumeracy((int) row.getCell(5).getNumericCellValue());
             s.setLiteracy((int) row.getCell(6).getNumericCellValue());
             s.setSocialEmotional((int) row.getCell(7).getNumericCellValue());
+            //gender
+            String genderStr = row.getCell(8, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK).getStringCellValue();
+            switch(genderStr){
+                case "M": s.setGender(Gender.MALE); break;
+                case "F": s.setGender(Gender.FEMALE); break;
+                default: s.setGender(Gender.NA); break;
+            }
         }
         return students;
     }
@@ -275,6 +316,46 @@ public class ApplicationViewModel implements BestSolutionConsumer{
 
     public BooleanProperty dataIsLoadedProperty() {
         return dataIsLoaded;
+    }
+
+    public BooleanProperty mustIncludeOthersProperty() {
+        return mustIncludeOthers;
+    }
+
+    public BooleanProperty shouldIncludeOthersProperty() {
+        return shouldIncludeOthers;
+    }
+
+    public BooleanProperty mustAvoidOthersProperty() {
+        return mustAvoidOthers;
+    }
+
+    public BooleanProperty shouldAvoidOthersProperty() {
+        return shouldAvoidOthers;
+    }
+
+    public BooleanProperty balanceNumeracyProperty() {
+        return balanceNumeracy;
+    }
+
+    public BooleanProperty balanceLiteracyProperty() {
+        return balanceLiteracy;
+    }
+
+    public BooleanProperty balanceSocialEmotionalProperty() {
+        return balanceSocialEmotional;
+    }
+
+    public BooleanProperty balanceGenderProperty() {
+        return balanceGender;
+    }
+
+    public IntegerProperty minClassSizeProperty() {
+        return minClassSize;
+    }
+
+    public IntegerProperty maxClassSizeProperty() {
+        return maxClassSize;
     }
 
     public void clearAllSolutions() {

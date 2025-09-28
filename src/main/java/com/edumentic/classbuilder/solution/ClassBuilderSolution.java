@@ -154,11 +154,14 @@ public class ClassBuilderSolution {
                             "<tr><td class='cb-student-name'>%s</td>" +
                                     "<td class='cb-metric'>%d</td>" +
                                     "<td class='cb-metric'>%d</td>" +
-                                    "<td class='cb-metric'>%d</td></tr>",
+                                    "<td class='cb-metric'>%d</td>" +
+                                    "<td class='cb-metric'>%s</td>" +
+                                    "</tr>",
                             s.getName(),
                             s.getNumeracy(),
                             s.getLiteracy(),
-                            s.getSocialEmotional()
+                            s.getSocialEmotional(),
+                            s.getGender().toString()
                     ));
                 }
                 html.append("</tbody></table>");
