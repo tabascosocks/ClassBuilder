@@ -25,6 +25,7 @@ public class ApplicationView extends VBox {
     @FXML private Button clearDatafileButton;
     @FXML private Label datafileSummaryLabel;
     @FXML private Label datafileErrorsLabel;
+    @FXML private HBox solutionScoreDisplayHBox;
 
     @FXML private Button startSolverButton;
 
@@ -75,8 +76,6 @@ public class ApplicationView extends VBox {
             }
         });
 
-        // Disable the solver content UI while the solver is not running.
-        solverContentSplitPane.disableProperty().bind(viewModel.runningSolverProperty().not());
         // Bind the solution history list to the solutions property in the ViewModel.
         solutionHistoryList.itemsProperty().bind(viewModel.solutionsProperty());
         // Bind the ViewModel's currentSolution to the selected item in the solution history list.
@@ -93,6 +92,13 @@ public class ApplicationView extends VBox {
                 // Show the scores of the selected solution.
                 currentSolutinHardScoreLabel.setText(String.valueOf(newV.getHardScore()));
                 currentsolutionSoftScoreLabel.setText(String.valueOf(newV.getSoftScore()));
+                //adjust background color
+                if(newV.getHardScore() < 0) {
+                    solutionScoreDisplayHBox.setStyle("-fx-background-color: #f29197");
+                }else{
+                    solutionScoreDisplayHBox.setStyle("-fx-background-color: #333333");
+                }
+
                 // Read required CSS files from resources for the report.
                 String css1 = "";
                 String css2 = "";

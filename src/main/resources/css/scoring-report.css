@@ -24,7 +24,7 @@
 .scoring-report .soft-constraint-violation {
     background: #fffbea;                    /* soft yellow */
     border-left: 4px solid #ffe066;         /* soft yellow border */
-    color: #b09817;                         /* yellow-brown text */
+    color: #847a4b;                         /* yellow-brown text */
     margin: 10px 0 6px 0;
     padding: 9px 17px;
     border-radius: 6px;
@@ -44,8 +44,7 @@
     transition: background 0.3s;
 }
 
-.scoring-report .constraint-violation .violation,
-.scoring-report .soft-constraint-violation .violation {
+.scoring-report .constraint-violation .violation {
     font-weight: bold;
     color: #a01010;
 }
