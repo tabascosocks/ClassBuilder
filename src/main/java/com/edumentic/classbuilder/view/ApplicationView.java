@@ -10,6 +10,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.web.WebView;
 import javafx.stage.FileChooser;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
 
@@ -28,7 +29,7 @@ public class ApplicationView extends VBox {
     @FXML private Label datafileSummaryLabel;
     @FXML private Label datafileErrorsLabel;
     @FXML private HBox solutionScoreDisplayHBox;
-
+    @FXML private FontIcon startButtonFontIcon;
 
     @FXML private Button startSolverButton;
 
@@ -42,6 +43,7 @@ public class ApplicationView extends VBox {
     @FXML private CheckBox enableBalanceGenderCheckbox;
     @FXML private Spinner<Integer> minClassSizeSpinner;
     @FXML private Spinner<Integer> maxClassSizeSpinner;
+    @FXML private Slider classBalanceSensitivitySlider;
 
     @FXML private ListView<ApplicationViewModel.ClassSolutionData> solutionHistoryList;
     @FXML private Button clearSolutionHistoryButton;
@@ -67,12 +69,12 @@ public class ApplicationView extends VBox {
     @FXML
     private void initialize() {
         minClassSizeSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 100));
-        minClassSizeSpinner.getValueFactory().valueProperty().bindBidirectional(viewModel.minClassSizeProperty().asObject());
-        minClassSizeSpinner.getValueFactory().setValue(15);
+        minClassSizeSpinner.getValueFactory().setValue(viewModel.minClassSizeProperty().getValue());
+        viewModel.minClassSizeProperty().bind(minClassSizeSpinner.valueProperty());
 
         maxClassSizeSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 100));
-        maxClassSizeSpinner.getValueFactory().valueProperty().bindBidirectional(viewModel.maxClassSizeProperty().asObject());
-        maxClassSizeSpinner.getValueFactory().setValue(30);
+        maxClassSizeSpinner.getValueFactory().setValue(viewModel.maxClassSizeProperty().getValue());
+        viewModel.maxClassSizeProperty().bind(maxClassSizeSpinner.valueProperty());
 
         // Bind the datafile summary label's text property to the ViewModel's datafile summary property.
         datafileSummaryLabel.textProperty().bind(viewModel.datafileSummaryProperty());
@@ -90,10 +92,13 @@ public class ApplicationView extends VBox {
                 startSolverButton.setText("Stop");
                 startSolverButton.setDefaultButton(false);
                 startSolverButton.setCancelButton(true);
+                startButtonFontIcon.setIconLiteral("mdoal-cancel");
+
             }else{
                 startSolverButton.setText("Start");
                 startSolverButton.setDefaultButton(true);
                 startSolverButton.setCancelButton(false);
+                startButtonFontIcon.setIconLiteral("mdrmz-play_circle_outline");
             }
         });
 
@@ -106,6 +111,7 @@ public class ApplicationView extends VBox {
         enableBalanceSocialEmotionalCheckbox.selectedProperty().bindBidirectional(viewModel.balanceSocialEmotionalProperty());
         enableBalanceGenderCheckbox.selectedProperty().bindBidirectional(viewModel.balanceGenderProperty());
 
+        classBalanceSensitivitySlider.valueProperty().bindBidirectional(viewModel.classMetricVarianceSensitivityProperty());
 
 
         // Bind the solution history list to the solutions property in the ViewModel.
@@ -129,28 +135,7 @@ public class ApplicationView extends VBox {
                     solutionScoreDisplayHBox.setStyle("-fx-background-color: #a5f7ad");
                 }
 
-                // Read required CSS files from resources for the report.
-                String css1 = "";
-                String css2 = "";
-                try {
-                    css1 = new String(getClass().getResourceAsStream("/css/classbuilder-report.css").readAllBytes());
-                    css2 = new String(getClass().getResourceAsStream("/css/scoring-report.css").readAllBytes());
-                } catch (Exception e) {
-                    // Swallow errors or log if necessary.
-                }
-                // Compose the HTML with embedded styles and load into webview.
-                String html = """
-                    <html>
-                    <head>
-                    <style>%s</style>
-                    <style>%s</style>
-                    </head>
-                    <body>
-                    %s
-                    </body>
-                    </html>
-                    """.formatted(css1, css2, newV.getSolutionReportHtml());
-                selectedSolutionReportWebView.getEngine().loadContent(html);
+                selectedSolutionReportWebView.getEngine().loadContent(viewModel.getCurrentSolutionReportHtml());
             }
         });
 
@@ -259,7 +244,33 @@ public class ApplicationView extends VBox {
     }
     @FXML
     private void onExportSelectedSolutionButton() {
-        // TODO: Implement export logic
+        ApplicationViewModel.ClassSolutionData selected = viewModel.currentSolutionProperty().get();
+        if (selected == null) {
+            // No solution is selected, ignore or inform user as desired.
+            return;
+        }
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Export Solution Report as HTML");
+
+        // Create sensible default filename using title and timestamp.
+        String timestamp = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
+                .format(java.time.LocalDateTime.now());
+        String defaultTitle = "classbuilder_solution_" + timestamp + ".html";
+        fileChooser.setInitialFileName(defaultTitle);
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("HTML Files (*.html)", "*.html"));
+
+        java.io.File file = fileChooser.showSaveDialog(this.getScene().getWindow());
+        if (file != null) {
+            String html = viewModel.getCurrentSolutionReportHtml();
+            try (java.io.FileWriter writer = new java.io.FileWriter(file)) {
+                writer.write(html);
+            } catch (IOException e) {
+                // Optionally show an error dialog if saving fails
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to save file: " + e.getMessage(), ButtonType.OK);
+                alert.showAndWait();
+            }
+        }
     }
 
 

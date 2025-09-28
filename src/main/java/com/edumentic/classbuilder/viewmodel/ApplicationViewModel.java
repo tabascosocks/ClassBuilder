@@ -56,6 +56,7 @@ public class ApplicationViewModel implements BestSolutionConsumer{
     private final IntegerProperty minClassSize = new SimpleIntegerProperty();
     private final IntegerProperty maxClassSize = new SimpleIntegerProperty();
 
+    private final IntegerProperty classMetricVarianceSensitivity = new SimpleIntegerProperty();
 
     private final BooleanProperty runningSolver = new SimpleBooleanProperty(false);
     private final BooleanProperty dataIsLoaded = new SimpleBooleanProperty(false);
@@ -115,7 +116,12 @@ public class ApplicationViewModel implements BestSolutionConsumer{
         minClassSize.addListener((obs, oldV, newV) -> constraints.setMinClassSize(newV.intValue()));
 
         maxClassSize.set(constraints.getMaxClassSize());
-        maxClassSize.addListener((obs, oldV, newV) -> constraints.setMaxClassSize(newV.intValue()));
+        maxClassSize.addListener((obs, oldV, newV) -> {
+            constraints.setMaxClassSize(newV.intValue());
+        });
+
+        classMetricVarianceSensitivity.set(constraints.getClassMetricVarianceSensitivity());
+        classMetricVarianceSensitivity.addListener((obs, oldV, newV) -> constraints.setClassMetricVarianceSensitivity(newV.intValue()));
 
     }
 
@@ -169,6 +175,32 @@ public class ApplicationViewModel implements BestSolutionConsumer{
             solutions.addFirst(new ClassSolutionData(solution, bestSolutionChangedEvent.getTimeMillisSpent()));
         });
         log.info("Found next best solution {}", solution.toBriefString());
+    }
+
+    public String getCurrentSolutionReportHtml(){
+        if(currentSolution.get() == null) return "";
+        // Read required CSS files from resources for the report.
+        String css1 = "";
+        String css2 = "";
+        try {
+            css1 = new String(getClass().getResourceAsStream("/css/classbuilder-report.css").readAllBytes());
+            css2 = new String(getClass().getResourceAsStream("/css/scoring-report.css").readAllBytes());
+        } catch (Exception e) {
+            // Swallow errors or log if necessary.
+        }
+        // Compose the HTML with embedded styles and load into webview.
+        String html = """
+                    <html>
+                    <head>
+                    <style>%s</style>
+                    <style>%s</style>
+                    </head>
+                    <body>
+                    %s
+                    </body>
+                    </html>
+                    """.formatted(css1, css2, currentSolution.get().getSolutionReportHtml());
+        return html;
     }
 
     /*
@@ -358,6 +390,14 @@ public class ApplicationViewModel implements BestSolutionConsumer{
         return maxClassSize;
     }
 
+    public int getClassMetricVarianceSensitivity() {
+        return classMetricVarianceSensitivity.get();
+    }
+
+    public IntegerProperty classMetricVarianceSensitivityProperty() {
+        return classMetricVarianceSensitivity;
+    }
+
     public void clearAllSolutions() {
         solutions.clear();
     }
@@ -383,10 +423,10 @@ public class ApplicationViewModel implements BestSolutionConsumer{
 
         @Override
         public String toString(){
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM-dd HH:mm:ss")
                     .withZone(ZoneId.systemDefault());
             String formattedTime = generatedAt != null ? formatter.format(generatedAt) : "N/A";
-            return String.format("%s: [Hard Score: %d, Soft Score: %d] %d ms",
+            return String.format("%s: [Score: %d/%d] %d ms",
                     formattedTime, hardScore, softScore, generationDurationMillis);
         }
     }

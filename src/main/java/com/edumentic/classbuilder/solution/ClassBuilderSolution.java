@@ -148,7 +148,7 @@ public class ClassBuilderSolution {
             if (studentsIn.isEmpty()) {
                 html.append("<div class='cb-class-empty'>No students assigned.</div>");
             } else {
-                html.append("<table class='cb-student-table'><thead><tr><th>Name</th><th>Numeracy</th><th>Literacy</th><th>Social-Emotional</th></tr></thead><tbody>");
+                html.append("<table class='cb-student-table'><thead><tr><th>Name</th><th>Numeracy</th><th>Literacy</th><th>Social-Emotional</th><th>Gender</th></tr></thead><tbody>");
                 for (Student s : studentsIn) {
                     html.append(String.format(
                             "<tr><td class='cb-student-name'>%s</td>" +

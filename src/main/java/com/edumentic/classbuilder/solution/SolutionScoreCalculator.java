@@ -247,7 +247,9 @@ public class SolutionScoreCalculator implements EasyScoreCalculator<ClassBuilder
             totalVariance += Math.abs(populationMean - metric);
         }
 
-        return (int)Math.round(ClassBuilderConstraints.getInstance().getClassMetricVarianceSensitivity() * totalVariance);
+        int result = (int)Math.round(ClassBuilderConstraints.getInstance().getClassMetricVarianceSensitivity() * totalVariance);
+
+        return result;
     }
 
     @FunctionalInterface

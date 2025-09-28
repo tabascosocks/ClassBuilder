@@ -223,7 +223,7 @@
                                 <destination>${project.build.directory}/image</destination>
                             </configuration>
                         </execution>
-                        <execution>
+                        <!--execution>
                             <id>create-installer</id>
                             <phase>package</phase>
                             <goals>
@@ -240,7 +240,7 @@
                                 </modulePaths>
                                 <destination>${project.build.directory}/installer</destination>
                             </configuration>
-                        </execution>
+                        </execution-->
                     </executions>
 
                 </plugin>
