@@ -1,5 +1,6 @@
 package com.edumentic.classbuilder.solution;
 
+import com.edumentic.classbuilder.model.Gender;
 import com.edumentic.classbuilder.model.Student;
 import com.edumentic.classbuilder.model.StudentClass;
 import lombok.Getter;
@@ -98,6 +99,35 @@ public class ClassBuilderSolution {
                 .toList();
     }
 
+    public double getAverageNumeracyForClass(StudentClass sc){
+        return getStudentsInClass(sc).stream()
+                .mapToDouble(Student::getNumeracy)
+                .average().
+                orElse(2.5);
+    }
+
+    public double getAverageLiteracyForClass(StudentClass sc){
+        return getStudentsInClass(sc).stream()
+                .mapToDouble(Student::getLiteracy)
+                .average().
+                orElse(2.5);
+    }
+
+    public double getAverageSocialEmotionalForClass(StudentClass sc){
+            return getStudentsInClass(sc).stream()
+                    .mapToDouble(Student::getSocialEmotional)
+                    .average().
+                    orElse(2.5);
+    }
+
+    public double getProportionMaleForClass(StudentClass sc){
+        List<Student> students = getStudentsInClass(sc);
+        long numMale = students.stream().filter(s -> s.getGender() == Gender.MALE).count();
+        long numFemale = students.stream().filter(s -> s.getGender() == Gender.FEMALE).count();
+        if(numFemale == 0 & numMale == 0) return 0.5;
+        return (double) numMale / (numMale + numFemale);
+    }
+
     public String toPrettyString() {
         StringBuilder sb = new StringBuilder("ClassBuilderSolution {\n");
         sb.append("  assignments=[\n");
@@ -131,6 +161,30 @@ public class ClassBuilderSolution {
                 score
         );
     }
+
+    public String generateStudentClassMetricReportHtml() {
+        StringBuilder html = new StringBuilder();
+        html.append("<h2 class='cb-section-title'>Class Metrics Summary</h2>");
+        html.append("<table class='cb-metrics-table'><thead><tr>")
+                .append("<th>Class</th>")
+                .append("<th>Avg Numeracy</th>")
+                .append("<th>Avg Literacy</th>")
+                .append("<th>Avg Social Emotional</th>")
+                .append("<th>Proportion Male</th>")
+                .append("</tr></thead><tbody>");
+        for (StudentClass studentClass : studentClasses.stream().sorted(Comparator.comparing(StudentClass::getClassCode)).toList()) {
+            html.append("<tr>");
+            html.append(String.format("<td>%s</td>", studentClass.getClassCode()));
+            html.append(String.format("<td>%.2f</td>", getAverageNumeracyForClass(studentClass)));
+            html.append(String.format("<td>%.2f</td>", getAverageLiteracyForClass(studentClass)));
+            html.append(String.format("<td>%.2f</td>", getAverageSocialEmotionalForClass(studentClass)));
+            html.append(String.format("<td>%.2f</td>", getProportionMaleForClass(studentClass)));
+            html.append("</tr>");
+        }
+        html.append("</tbody></table>");
+        return html.toString();
+    }
+
 
     public String toHtmlReport() {
         StringBuilder html = new StringBuilder();
@@ -169,6 +223,10 @@ public class ClassBuilderSolution {
             html.append("</div>");
         }
         html.append("</div>"); // cb-class-list
+
+        // === Insert constraint table here ===
+        html.append(generateStudentClassMetricReportHtml());
+
 
         // Scoring report
         if (scoringReportHtml != null && !scoringReportHtml.isEmpty()) {

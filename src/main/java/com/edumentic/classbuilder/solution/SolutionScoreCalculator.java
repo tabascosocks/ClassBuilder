@@ -124,12 +124,11 @@ public class SolutionScoreCalculator implements EasyScoreCalculator<ClassBuilder
 
         }
 
+
+
         if(ClassBuilderConstraints.getInstance().isBalanceNumeracy()){
             int numeracyVariance = scoreVarianceBetweenClassesFor(classBuilderSolution,
-                    (sc, students) -> {
-                        return students.stream().mapToInt(Student::getNumeracy).average().orElse(2.5);
-                    }
-            );
+                    classBuilderSolution::getAverageNumeracyForClass);
             softScore -= numeracyVariance;
             addConstraintReport(classBuilderSolution, constraintReports,
                     String.format(
@@ -138,10 +137,7 @@ public class SolutionScoreCalculator implements EasyScoreCalculator<ClassBuilder
 
         if(ClassBuilderConstraints.getInstance().isBalanceLiteracy()){
             int literacyVariance = scoreVarianceBetweenClassesFor(classBuilderSolution,
-                    (sc, students) -> {
-                        return students.stream().mapToInt(Student::getLiteracy).average().orElse(2.5);
-                    }
-            );
+                    classBuilderSolution::getAverageLiteracyForClass);
             softScore -= literacyVariance;
             addConstraintReport(classBuilderSolution, constraintReports,
                     String.format(
@@ -150,10 +146,7 @@ public class SolutionScoreCalculator implements EasyScoreCalculator<ClassBuilder
 
         if(ClassBuilderConstraints.getInstance().isBalanceSocialEmotional()){
             int socialVariance = scoreVarianceBetweenClassesFor(classBuilderSolution,
-                    (sc, students) -> {
-                        return students.stream().mapToInt(Student::getSocialEmotional).average().orElse(2.5);
-                    }
-            );
+                    classBuilderSolution::getAverageSocialEmotionalForClass);
             softScore -= socialVariance;
             addConstraintReport(classBuilderSolution, constraintReports,
                     String.format(
@@ -163,13 +156,7 @@ public class SolutionScoreCalculator implements EasyScoreCalculator<ClassBuilder
 
         if(ClassBuilderConstraints.getInstance().isBalanceGender()){
             int genderProportionVariance = scoreVarianceBetweenClassesFor(classBuilderSolution,
-                    (sc, students) -> {
-                        long numMale = students.stream().map(s -> s.getGender() == Gender.MALE).count();
-                        long numFemale = students.stream().map(s -> s.getGender() == Gender.FEMALE).count();
-                        if(numFemale == 0 & numMale == 0) return 0.5;
-                        return (double) numMale / (numMale + numFemale);
-                    }
-            );
+                    classBuilderSolution::getProportionMaleForClass);
             softScore -= genderProportionVariance;
             addConstraintReport(classBuilderSolution, constraintReports,
                     String.format(
@@ -234,7 +221,7 @@ public class SolutionScoreCalculator implements EasyScoreCalculator<ClassBuilder
 
     private int scoreVarianceBetweenClassesFor(ClassBuilderSolution classBuilderSolution, ClassMetricProvider metricProvider){
         double[] classMetrics = classBuilderSolution.getStudentClasses().stream()
-                .mapToDouble(sc -> metricProvider.getMetric(sc, classBuilderSolution.getStudentsInClass(sc)))
+                .mapToDouble(metricProvider::getMetric)
                 .toArray();
 
         double populationMean = Arrays.stream(classMetrics)
@@ -254,6 +241,6 @@ public class SolutionScoreCalculator implements EasyScoreCalculator<ClassBuilder
 
     @FunctionalInterface
     private interface ClassMetricProvider{
-        double getMetric(StudentClass studentClass, List<Student> studentsInClass);
+        double getMetric(StudentClass studentClass);
     }
 }
